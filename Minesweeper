@@ -142,6 +142,7 @@ class Board {
                 .forEach(c -> tiles[r][c] = new Tile(r, c)));
     }
 
+
     private void addMines() {
         Random rng = new Random();
         Set<List<Integer>> MineCoordinates = new HashSet<>(MINES);
