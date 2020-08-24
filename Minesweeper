@@ -1,0 +1,299 @@
+package minesweeper;
+
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.layout.AnchorPane;
+import javafx.stage.Stage;
+
+import java.io.IOException;
+
+public class Main extends Application{
+    public static void main(String... args) {
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws IOException{
+        AnchorPane root = FXMLLoader.load(getClass().getResource("/minesweeper/minesweeper.fxml"));
+        primaryStage.setTitle("Minesweeper");
+        primaryStage.setResizable(false);
+        primaryStage.setScene(new Scene(root, 800, 800));
+        primaryStage.show();
+    }
+}
+
+package minesweeper;
+
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Button;
+import javafx.scene.layout.AnchorPane;
+
+import java.io.IOException;
+import java.net.URI;
+
+public class ControllerMenu {
+    @FXML public AnchorPane root;
+    @FXML public Button ButtonPlay, ButtonHelp, ButtonExit;
+
+    public void play() throws IOException{
+        root.getScene().setRoot(FXMLLoader.load(getClass().getResource("/minesweeper/Game.fxml")));
+    }
+
+    public void exit(){
+        System.exit(0);
+    }
+}
+
+
+package minesweeper;
+
+import javafx.scene.control.Button;
+
+class Tile extends Button {
+    private boolean flagged, mine;
+    private final int x, y;
+    private int value;
+
+    Tile(int x, int y){
+        this.x = x;
+        this.y = y;
+
+        this.setStyle("-fx-font-weight: bold");
+        this.setPrefSize(28, 28);
+    }
+
+    int getX(){
+        return x;
+    }
+
+    int getY(){
+        return y;
+    }
+
+    int getValue(){
+        return value;
+    }
+
+    void setValue(int n){
+        value = n;
+    }
+
+    void flag(){
+        flagged = !flagged;
+    }
+
+    boolean isFlagged(){
+        return flagged;
+    }
+
+    void setMine(){
+        mine = true;
+        value = 9;
+    }
+
+    boolean isMine(){
+        return mine;
+    }
+
+    void disable(){
+        this.setDisable(true);
+
+        if(mine)
+            this.setStyle("-fx-background-color: red");
+        else if (value > 0)
+            this.setText(value+"");
+    }
+}
+
+package minesweeper;
+
+import java.util.*;
+import java.util.stream.IntStream;
+
+class Board {
+    final int ROWS = 25;
+    final int COLUMNS = 25;
+    final int MINES = 75;
+    private final Tile[][] tiles = new Tile[ROWS][COLUMNS];
+
+    Board() {
+        makeTiles();
+        addMines();
+        updateValues();
+    }
+
+    Tile getTile(int x, int y) {
+        return tiles[x][y];
+    }
+
+    private LinkedList<Tile> flatTiles() {
+        LinkedList<Tile> flatTiles = new LinkedList<>();
+        Arrays.stream(tiles).forEach(t -> flatTiles.addAll(Arrays.asList(t)));
+        return flatTiles;
+    }
+
+    private void makeTiles() {
+        IntStream.range(0, ROWS)
+            .parallel()
+            .forEach(r -> IntStream.range(0, COLUMNS)
+                .parallel()
+                .forEach(c -> tiles[r][c] = new Tile(r, c)));
+    }
+
+    private void addMines() {
+        Random rng = new Random();
+        Set<List<Integer>> MineCoordinates = new HashSet<>(MINES);
+
+        while (MineCoordinates.size() < MINES)
+            MineCoordinates.add(List.of(rng.nextInt(ROWS), rng.nextInt(COLUMNS)));
+
+        for(List<Integer> x : MineCoordinates)
+            tiles[ x.get(0) ][ x.get(1) ].setMine();
+    }
+
+    private void updateValues() {
+        flatTiles().stream().filter(t -> !t.isMine())
+            .forEach(t -> t.setValue((int) adjacent(t).stream()
+                .parallel()
+                .filter(Tile::isMine)
+                .count()));
+    }
+
+    List<Tile> adjacent(Tile tile) {
+        List<Tile> adjacent = new LinkedList<>();
+        int neighbors[] = {-1, 0, 0, -1, -1, -1, -1, 1, 1, -1, 1, 0, 0, 1, 1, 1};
+
+        for(int i=0; i<neighbors.length; i+=2){
+            int Newx = tile.getX()+neighbors[i];
+            int Newy = tile.getY()+neighbors[i+1];
+
+            if (Newx>=0 && Newx<25 && Newy>=0 && Newy<25)
+                adjacent.add(tiles[Newx][Newy]);
+        }
+        return adjacent;
+    }
+}
+
+package minesweeper;
+
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
+import javafx.scene.control.Label;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Pane;
+import javafx.util.Duration;
+
+import java.io.IOException;
+import java.util.stream.IntStream;
+
+public class Game {
+    @FXML public AnchorPane gameScene;
+    @FXML public Pane Container;
+    @FXML public Label mines, tiles;
+    private final Board board = new Board();
+    private int mineCount = 0, tileCount = 0;
+
+    public void initialize(){
+        setUpGrid();
+        gameScene.addEventHandler(KeyEvent.KEY_PRESSED, e -> {
+            if (KeyCode.ESCAPE == e.getCode())
+                try {
+                    AnchorPane root = FXMLLoader.load(getClass().getResource("/minesweeper/minesweeper.fxml"));
+                    gameScene.getScene().setRoot(root);
+                }catch (IOException ex){
+                    ex.printStackTrace();
+                }
+        });
+        mines.setText("Mines: 0/" + board.MINES);
+        tiles.setText("Tiles: 0/" + board.ROWS * board.COLUMNS);
+    }
+
+    private void reveal(Tile tile) {
+        tile.disable();
+        tileCounter();
+
+        if (tile.isMine())
+            gameover(false);
+        else if (tile.getValue() == 0)
+            board.adjacent(tile).stream()
+                .filter(e -> !(e.isDisabled() || e.isMine()))
+                .forEach(this::reveal);
+    }
+
+    private void flag(Tile t){
+        mineCounter(!t.isFlagged());
+        t.flag();
+        t.setText(t.isFlagged() ? "O" : "");
+    }
+
+    private void gameover(boolean won){
+        try{
+            AnchorPane root = FXMLLoader.load(getClass().getResource("/minesweeper/" + (won ? "Victory" : "Loss") + ".fxml"));
+            Timeline tl = new Timeline(new KeyFrame(Duration.seconds(2), e -> gameScene.getScene().setRoot(root)));
+            tl.play();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void mineCounter(boolean inc){
+        mines.setText("Mines: " + (inc ? ++mineCount : --mineCount) + "/" +board.MINES);
+    }
+
+    private void tileCounter(){
+        tiles.setText("Tiles: "+ ++tileCount + "/" +board.ROWS*board.COLUMNS);
+        if(gameWon())
+            gameover(true);
+    }
+
+    private boolean gameWon(){
+        return tileCount == board.ROWS * board.COLUMNS - board.MINES;
+    }
+
+    private void setUpGrid(){
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(3));
+        grid.setHgap(1);
+        grid.setVgap(1);
+
+        IntStream.range(0, board.ROWS)
+            .forEach(r -> IntStream.range(0, board.COLUMNS)
+                .forEach(c -> grid.add(createTile(r, c), c, r)));
+
+        Container.getChildren().add(grid);
+    }
+
+    private Tile createTile(int x, int y){
+        final Tile tile = board.getTile(x, y);
+        tile.setOnMouseClicked(e -> {
+            if(e.getButton()==MouseButton.PRIMARY)
+                reveal(tile);
+            else
+                flag(tile);
+        });
+        return tile;
+    }
+}
+
+package minesweeper;
+
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.control.Button;
+
+public class ReplayController {
+    @FXML Button replay;
+
+    public void PlayAgain() throws Exception{
+        replay.getScene().setRoot(FXMLLoader.load(getClass().getResource("Game.fxml")));
+    }
+}
