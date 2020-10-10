@@ -1,0 +1,95 @@
+from socket import *
+import os
+
+class ClientCode:
+    HOST = '127.0.0.1'
+    PORT = 12000
+    CMD_OPEN = "OPEN"
+    CMD_CLOSE = "CLOSE"
+    CMD_GET = "GET"
+    CMD_PUT = "PUT"
+    CMD_QUIT = "QUIT"
+
+    def _init__(self):
+        self.stock = None
+
+    def command_close(self):
+        if (self.stock is not None):
+            self.sock.sendall(self.CMD_CLOSE.encode("utf-8"))
+            data = self.sock.recv(1024).decode("utf-8")
+            print ("The server is: ", data)
+            self.sock.close()
+            self.sock = None
+        else:
+            print("No connection")
+
+    def command_open(self):
+        if (self.stock is not None):
+            self.command_close()
+
+        sock = socket(AF_INET, SOCK_STREAM)
+        self.sock.connect((self.HOST, self.PORT))
+        self.sock.sendall(self.CMD_OPEN.encode("utf-8"))
+        data = self.sock.recv(1024).decode("utf-8")
+        print("The server is: ", data)
+
+    def command_quit(self):
+        self.command_close()
+        self.is_running = False
+
+    def command_put(self, filename):
+        if (self.stock is not None):
+            print("No connection")
+        else:
+            self.sock.sendall(self.CMD_PUT.encode("utf-8"))
+            self.sock.sendall(filename.encode("utf-8"))
+            data = self.sock.recv(1024).decode("utf-8")
+            print("The server is: ", data)
+
+            fname = "client/" + filename
+            size = str(os.stat(fname).st_size)
+            print("Size of file is: ", size)
+            self.sock.sendall(size.encode("utf-8"))
+            with open('client/filename.txt', 'rb') as f:
+                data = f.read(1024)
+                while data:
+                    self.sock.send(data)
+                    data = f.read(1024)
+            data = self.sock.recv(1024).decode("utf-8")
+            print("The server is: ", data)
+
+    def command_get(self, filename):
+        self.sock.sendall(self.CMD_GET.encode("utf-8"))
+        self.sock.sendall(filename.encode("utf-8"))
+        fname = "client/" + filename
+        size = int(self.sock.recv(1024).decode("utf-8"))
+
+        f = open(fname, 'wb')
+        loaded = 0  # length of data
+        while loaded < size:  # continue until there is no data left
+            data = self.sock.recv(1024)
+            f.write(data)
+            loaded += len(data)
+        f.close()
+        received = "Received " + fname
+        self.sock.sendall(received.encode("utf-8"))
+
+    def run(self):
+        self.is_running=True;
+        while(self.is_running):
+            s = input("Message is: ")
+            parse = s.split(' ')
+            parse[0] = parse[0].upper()
+            if(parse[0] == self.CMD_OPEN):
+                self.command_open(int(parse[1]))
+            elif (parse[0] == self.CMD_CLOSE):
+                self.command_close()
+            elif (parse[0] == self.CMD_QUIT):
+                self.command_quit()
+            elif (parse[0] == self.CMD_PUT):
+                self.command_put(parse[1])
+            elif (parse[0] == self.CMD_GET):
+                self.command_get(parse[1])
+            else:
+                print ("Unknown command, try again")
+
