@@ -1,0 +1,77 @@
+from socket import *
+import os
+
+class ServerCode:
+    HOST = '127.0.0.1'
+    PORT = 12000
+    CMD_OPEN = "OPEN"
+    CMD_CLOSE = "CLOSE"
+    CMD_GET = "GET"
+    CMD_PUT = "PUT"
+    CMD_QUIT = "QUIT"
+
+    def _init__(self, conn, addr):
+        self.addr = addr
+        self.conn = conn
+
+    def command_close(self):
+        end = "finish"
+        self.conn.sendall(end.encode("utf-8"))
+
+    def command_open(self):
+        start = "start"
+        self.conn.sendall(start.encode("utf-8"))
+
+    def command_quit(self):
+        self.command_close()
+        self.is_running = False
+
+    def command_put(self, filename):
+        data = self.conn.recv(1024).decode("utf-8")
+        fname = "server/" + filename
+        self.conn.sendall(filename.encode("utf-8"))
+        size = int(self.conn.recv(1024).decode("utf-8"))
+
+        f = open(fname, 'wb')
+        loaded = 0  # Len(data)
+        while loaded < size:
+            data = self.conn.recv(1024)
+            f.write(data)
+            loaded += len(data)
+        f.close()
+        received = "Received " + fname
+        self.conn.sendall(received.encode("utf-8"))
+
+    def command_get(self, filename):
+        data = self.conn.recv(1024).decode("utf-8")
+        fname = "server/" + filename
+        size = str(os.stat(fname).st_size)
+        self.conn.sendall(size.encode("utf-8"))
+
+        with open(filename, 'rb') as f:
+            data = f.read(1024)
+            while data:
+                self.conn.send(data)
+                data = f.read(1024)
+
+        received = "Received"
+        self.conn.sendall(received.encode("utf-8")) # file is received
+
+    def run(self):
+        self.is_running=True;
+        while(self.is_running):
+            s = input("Message is: ")
+            parse = s.split(' ')
+            parse[0] = parse[0].upper()
+            if(parse[0] == self.CMD_OPEN):
+                self.command_open(int(parse[1]))
+            elif (parse[0] == self.CMD_CLOSE):
+                self.command_close()
+            elif (parse[0] == self.CMD_QUIT):
+                self.command_quit()
+            elif (parse[0] == self.CMD_PUT):
+                self.command_put(parse[1])
+            elif (parse[0] == self.CMD_GET):
+                self.command_get(parse[1])
+            else:
+                print ("Unknown command, try again")
