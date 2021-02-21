@@ -1,0 +1,56 @@
+[
+    {
+      "id": 8225, 
+      "lat": 50.1220639499942, 
+      "lon": -5.53289830684662, 
+      "category": "atm", 
+      "name": "One And All", 
+      "created_on": 1465943680, 
+      "geolocation_degrees": "5\u00b031'58.43\"W, 50\u00b07'19.43\"N"
+    }, 
+    {
+      "id": 42, 
+      "lat": 60.1605345, 
+      "lon": 24.9390492, 
+      "category": "default", 
+      "name": "Belle Modeste", 
+      "created_on": 1397211665, 
+      "geolocation_degrees": "24\u00b056'20.58\"E, 60\u00b09'37.92\"N"
+    }, 
+    {
+      "id": 15, 
+      "lat": 48.4377466, 
+      "lon": -123.3124115, 
+      "category": "grocery", 
+      "name": "Slaters Meats", 
+      "created_on": 1394219130, 
+      "geolocation_degrees": "123\u00b018'44.68\"W, 48\u00b026'15.89\"N"
+    }, 
+    {
+      "id": 33, 
+      "lat": 50.0658333, 
+      "lon": 14.3588965, 
+      "category": "default", 
+      "name": "kaktusy eshop", 
+      "created_on": 1422120857, 
+      "geolocation_degrees": "14\u00b021'32.03\"E, 50\u00b03'57.0\"N"
+    }, 
+    {
+      "id": 3, 
+      "lat": 51.5493776, 
+      "lon": -0.0593789, 
+      "category": "food", 
+      "name": "Pembury Tavern", 
+      "created_on": 1370785480, 
+      "geolocation_degrees": "0\u00b03'33.76\"E, 51\u00b032'57.76\"N"
+    }, 
+    {
+      "id": 4, 
+      "lat": 60.4456862, 
+      "lon": 22.2818123, 
+      "category": "shopping", 
+      "name": "Tietokonekauppa", 
+      "created_on": 1417878506, 
+      "geolocation_degrees": "22\u00b016'54.52\"E, 60\u00b026'44.47\"N"
+    }
+]
